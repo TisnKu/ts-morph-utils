@@ -7,6 +7,7 @@ export default function (tsConfigFilePath?: string, projectPath?: string) {
     tsConfigFilePath,
     projectPath,
   });
+
   const queue = [];
 
   const sourceFile = project.getSourceFile('./src/test/simplifyCondition.ts');

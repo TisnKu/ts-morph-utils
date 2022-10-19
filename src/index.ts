@@ -2,12 +2,11 @@ import fs from "fs";
 import _ from "lodash";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { commonUtils } from "./common/utils";
 
 interface Args {
   feature?: string;
-  tsconfigPath?: string;
-  projectPath?: string;
+  tsconfig?: string;
+  project?: string;
 }
 
 const argv = yargs(hideBin(process.argv))
@@ -39,14 +38,7 @@ if (matchedFile) {
       _.pick(argv, ["project", "tsconfig"]),
       "\n"
     );
-    commonUtils
-      .askQuestion("\nPlease confirm the arguments are correct？（Y/N)")
-      .then((answer) => {
-        if (answer == "Y") {
-          console.log("\nStart\n");
-          feature.default(argv.tsconfigPath, argv.projectPath);
-        }
-      });
+    feature.default(argv.tsconfig, argv.project);
   }
 } else {
   console.log(

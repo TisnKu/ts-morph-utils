@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { ImportDeclaration, SourceFile } from "ts-morph";
+import { ImportDeclaration, Project, SourceFile } from "ts-morph";
 import { createProject } from "../common/project";
 
 export default function (tsconfigPath?: string, projectPath?: string) {
