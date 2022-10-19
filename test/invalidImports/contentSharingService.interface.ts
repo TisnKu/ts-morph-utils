@@ -1,7 +1,7 @@
-export interface IContentSharingService {}
+export interface IA {}
 
-export interface ISharingSession {}
+export interface IB {}
 
-export class ContentSharingError {
+export class C {
   public errorCode: string;
 }
