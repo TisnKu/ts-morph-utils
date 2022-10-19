@@ -1,9 +1,12 @@
-import { BinaryExpression, Node, ParenthesizedExpression, Project, SyntaxKind } from 'ts-morph';
 import _ from 'lodash';
+import { BinaryExpression, Node, ParenthesizedExpression, SyntaxKind } from 'ts-morph';
+import { createProject } from '../common/project';
 
-(function () {
-  const project = new Project();
-  project.addSourceFileAtPath('./src/test/simplifyCondition.ts');
+export default function (tsConfigFilePath?: string, projectPath?: string) {
+  const project = createProject({
+    tsConfigFilePath,
+    projectPath,
+  });
   const queue = [];
 
   const sourceFile = project.getSourceFile('./src/test/simplifyCondition.ts');

@@ -1,52 +1,58 @@
-import { Identifier, Project, SyntaxKind, Node, NamedImports, ImportClause, ImportDeclaration } from "ts-morph";
-import * as _ from 'lodash';
+import fs from "fs";
+import _ from "lodash";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+import { commonUtils } from "./common/utils";
 
-(function() {
-  const project = new Project();
-  project.addSourceFilesAtPaths('./src/test/**/*.ts');
-  
-  const sourceFile = project.getSourceFile(sourceFile => {
-    const firstVariableDeclaration = sourceFile.getFirstDescendantByKind(SyntaxKind.VariableDeclaration);
-    return !!firstVariableDeclaration?.hasExportKeyword();
-  });
+interface Args {
+  feature?: string;
+  tsconfigPath?: string;
+  projectPath?: string;
+}
 
-  const otherSourceFile = project.getSourceFiles().filter(s => s !== sourceFile);
-  
-  const variableDeclaration = sourceFile.getFirstDescendantByKind(SyntaxKind.VariableDeclaration);
+const argv = yargs(hideBin(process.argv))
+  .alias("f", "feature")
+  .alias("p", "project")
+  .alias("c", "tsconfig").argv as Args;
 
-  variableDeclaration.findReferencesAsNodes()
-  const queue = [];
-  _.chain(otherSourceFile)
-    .map(s => s.getDescendantsOfKind(SyntaxKind.Identifier))
-    .flatten()
-    .filter(identifier => identifier.getText() === variableDeclaration.getName()).value().forEach(i => {
-      const definitionNode: Node = i.getDefinitionNodes()?.[0];
-      if(definitionNode === variableDeclaration) {
-        console.log('matched');
+function requireFeature(fileName: string) {
+  return require("./features/" + fileName);
+}
 
-        const belongingImportSpecifier: Node = (i as Identifier).getFirstAncestorByKind(SyntaxKind.ImportSpecifier);
-        if(Node.isImportSpecifier(belongingImportSpecifier)) {
-          const importDeclaration: ImportDeclaration = belongingImportSpecifier.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
-          // queue.push(() => {
-          //   if(belongingImportSpecifier.getParent().getElements().length > 1) {
-          //     belongingImportSpecifier.remove();
-          //   } else if(importDeclaration.getDefaultImport()) {
-          //     importDeclaration.removeNamedImports();
-          //   } else {
-          //     importDeclaration.remove();
-          //   }
-          // })
-          
-        } else {
-          queue.push(() => i.replaceWithText(variableDeclaration.getInitializer().getText()));
+const listAllFilesUnderFeatures = () => {
+  return fs
+    .readdirSync("src/features")
+    .map((fileName: string) => fileName.replace(".ts", ""));
+};
+const featureName = argv.feature;
+const filesNames = listAllFilesUnderFeatures();
+const matchedFile = filesNames.find((fileName: string) =>
+  fileName.toLowerCase().includes(_.toLower(featureName))
+);
+
+if (matchedFile) {
+  const feature = requireFeature(matchedFile);
+  if (feature.default) {
+    console.log("Matched feature: ", matchedFile, "\n");
+    console.log(
+      "Running feature with arguments: ",
+      _.pick(argv, ["project", "tsconfig"]),
+      "\n"
+    );
+    commonUtils
+      .askQuestion("\nPlease confirm the arguments are correct？（Y/N)")
+      .then((answer) => {
+        if (answer == "Y") {
+          console.log("\nStart\n");
+          feature.default(argv.tsconfigPath, argv.projectPath);
         }
-      }
-    });
-    queue.push(() => variableDeclaration.remove());
-    queue.forEach(caller => caller());
-    if(_.isEmpty(_.trim(sourceFile.getFullText(), [' ', '\r', '\n']))) {
-      sourceFile.delete();
-    }
-    otherSourceFile.forEach(f => f.fixUnusedIdentifiers());
-    project.save();
-})();
+      });
+  }
+} else {
+  console.log(
+    matchedFile.length === 0
+      ? "No Command Matched "
+      : "More than 1 command matched: ",
+    matchedFile
+  );
+}

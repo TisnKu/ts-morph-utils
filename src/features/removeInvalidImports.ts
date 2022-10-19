@@ -1,10 +1,12 @@
-import { Project, ImportDeclaration, SourceFile } from "ts-morph";
 import _ from "lodash";
+import { ImportDeclaration, SourceFile } from "ts-morph";
+import { createProject } from "../common/project";
 
-(function () {
-  const project = new Project();
-  project.addSourceFilesAtPaths("./src/test/invalidImports/**/*.ts");
-
+export default function (tsconfigPath?: string, projectPath?: string) {
+  const project = createProject({
+    tsConfigFilePath: tsconfigPath,
+    projectPath,
+  });
   const queue = [];
   project.getSourceFiles().forEach((sourceFile) => {
     return sourceFile
@@ -26,13 +28,17 @@ import _ from "lodash";
               } else {
                 namedImport.remove();
               }
+              return declaration.getSourceFile().getFilePath();
             });
           }
         });
       });
   });
 
-  queue.forEach((fn) => fn());
+  console.log("Files optimized: \n");
+  _.uniq(queue.map((fn) => fn())).forEach((filePath) =>
+    console.log(filePath, "\n")
+  );
 
   project.save();
 
@@ -40,10 +46,8 @@ import _ from "lodash";
     sourceFile: SourceFile,
     namedExport: string
   ): boolean {
-    return sourceFile
-      .getExportDeclarations()
-      .some((declaration) =>
-        declaration.getNamedExports().some((ne) => ne.getName() === namedExport)
-      );
+    return [...sourceFile.getExportedDeclarations().keys()].some(
+      (name: string) => name === namedExport
+    );
   }
-})();
+}
