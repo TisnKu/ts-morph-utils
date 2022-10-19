@@ -23,11 +23,11 @@ export default function (tsconfigPath?: string, projectPath?: string) {
             !hasNamedExport(sourceFileImported, namedImport.getName())
           ) {
             queue.push(() => {
-              if (declaration.getNamedImports().length === 1) {
+              namedImport.remove();
+              if (declaration.getNamedImports().length === 0) {
                 declaration.remove();
-              } else {
-                namedImport.remove();
               }
+              declaration.getSourceFile().fixMissingImports();
               return declaration.getSourceFile().getFilePath();
             });
           }
@@ -36,9 +36,19 @@ export default function (tsconfigPath?: string, projectPath?: string) {
   });
 
   console.log("Files optimized: \n");
-  _.uniq(queue.map((fn) => fn())).forEach((filePath) => console.log(filePath));
+  const optimizedFiles = _.uniq(queue.map((fn) => fn()));
+  project.saveSync();
 
-  project.save();
+  console.log(optimizedFiles.join("\n"));
+
+  //const newproject = createProject({
+  //  tsConfigFilePath: tsconfigPath,
+  //  projectPath,
+  //});
+  //optimizedFiles.forEach((filePath) => {
+  //  newproject.getSourceFile(filePath)?.fixMissingImports();
+  //});
+  //newproject.save();
 
   function hasNamedExport(
     sourceFile: SourceFile,
