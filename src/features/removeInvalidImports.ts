@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { ImportDeclaration, Project, SourceFile } from "ts-morph";
+import { ImportDeclaration, SourceFile } from "ts-morph";
 import { createProject } from "../common/project";
 
 export default function (tsconfigPath?: string, projectPath?: string) {
@@ -36,9 +36,7 @@ export default function (tsconfigPath?: string, projectPath?: string) {
   });
 
   console.log("Files optimized: \n");
-  _.uniq(queue.map((fn) => fn())).forEach((filePath) =>
-    console.log(filePath, "\n")
-  );
+  _.uniq(queue.map((fn) => fn())).forEach((filePath) => console.log(filePath));
 
   project.save();
 
