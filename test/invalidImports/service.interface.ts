@@ -1,7 +1,5 @@
 export interface IA {}
 
-export interface IB {}
-
-export class C {
+export class ClassB {
   public errorCode: string;
 }
