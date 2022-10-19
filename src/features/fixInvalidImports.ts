@@ -27,7 +27,7 @@ export default function (tsconfigPath?: string, projectPath?: string) {
               if (declaration.getNamedImports().length === 0) {
                 declaration.remove();
               }
-              declaration.getSourceFile().fixMissingImports();
+              //declaration.getSourceFile().fixMissingImports();
               return declaration.getSourceFile().getFilePath();
             });
           }
@@ -41,14 +41,32 @@ export default function (tsconfigPath?: string, projectPath?: string) {
 
   console.log(optimizedFiles.join("\n"));
 
-  //const newproject = createProject({
-  //  tsConfigFilePath: tsconfigPath,
-  //  projectPath,
-  //});
-  //optimizedFiles.forEach((filePath) => {
-  //  newproject.getSourceFile(filePath)?.fixMissingImports();
-  //});
-  //newproject.save();
+  (function fixMissingImports() {
+    const project = createProject({
+      tsConfigFilePath: tsconfigPath,
+      projectPath,
+    });
+    optimizedFiles.forEach((filePath) => {
+      project.getSourceFile(filePath)?.fixMissingImports();
+    });
+    project.saveSync();
+  })();
+
+  (function cleanup() {
+    const project = createProject({
+      tsConfigFilePath: tsconfigPath,
+      projectPath,
+    });
+    optimizedFiles.forEach((filePath) => {
+      const sourceFile = project.getSourceFile(filePath);
+      sourceFile?.getImportDeclarations().forEach((declaration) => {
+        if (declaration.getModuleSpecifierValue() === "assert") {
+          declaration.remove();
+        }
+      });
+    });
+    project.saveSync();
+  })();
 
   function hasNamedExport(
     sourceFile: SourceFile,
