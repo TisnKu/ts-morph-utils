@@ -1,4 +1,7 @@
 export function getRelativePath(path1: string, path2: string): string {
+  if (path1 === path2) {
+    throw new Error("Cannot get relative path to self");
+  }
   const path1Parts = path1.split("/");
   const path2Parts = path2.split("/");
 
