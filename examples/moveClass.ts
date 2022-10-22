@@ -1,4 +1,7 @@
 import { ClassDeclaration, Project } from "ts-morph";
+import { cleanGenerated } from "./utils";
+
+cleanGenerated();
 
 const project = new Project();
 project.createSourceFile(
@@ -20,9 +23,18 @@ export class ClassB {
 const fileA = project.getSourceFileOrThrow("a.ts");
 const fileB = project.getSourceFileOrThrow("b.ts");
 fileA.getClasses().forEach((klass: ClassDeclaration) => {
-  fileA.addInterface(klass.extractInterface(`I${klass.getName()}`));
+  const interfaceDeclaration = fileA.addInterface(
+    klass.extractInterface(`I${klass.getName()}`)
+  );
+  interfaceDeclaration.setIsExported(true);
+  klass.addImplements(`I${klass.getName()}`);
   fileB.addClass(klass.getStructure());
+  fileB.addImportDeclaration({
+    moduleSpecifier: "./a",
+    namedImports: [`I${klass.getName()}`],
+  });
   klass.remove();
+  fileA.formatText();
 });
 
 project.saveSync();
