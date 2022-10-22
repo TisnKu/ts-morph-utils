@@ -6,6 +6,7 @@ import {
   Node,
   SyntaxKind,
 } from "ts-morph";
+import { findDeclaration, findImportedDeclaration } from "../common/ast";
 import { getRelativePath } from "../common/file";
 import { createProject } from "../common/project";
 
@@ -46,9 +47,11 @@ export default function (tsconfigPath?: string, projectPath?: string) {
           declaration: ClassDeclaration
         ) {
           if (!newInterfaceDeclarations.has(classKey)) {
-            const interfaceDeclaration = generateInterface(declaration);
+            const interfaceDeclaration =
+              generateOrGetExistingInterface(declaration);
             newInterfaceDeclarations.set(classKey, interfaceDeclaration);
             return interfaceDeclaration;
+            //}
           } else {
             const interfaceDeclaration = newInterfaceDeclarations.get(classKey);
             sourceFile.addImportDeclaration({
@@ -89,10 +92,7 @@ export default function (tsconfigPath?: string, projectPath?: string) {
         return importDeclaration
           .getNamedImports()
           .reduce((acc, namedImport) => {
-            const declaration = importDeclaration
-              .getModuleSpecifierSourceFile()
-              ?.getExportedDeclarations()
-              .get(namedImport.getName())[0];
+            const declaration = findDeclaration(namedImport);
             if (declaration?.getKind() === SyntaxKind.ClassDeclaration) {
               acc.push([namedImport, declaration]);
             }
@@ -100,13 +100,20 @@ export default function (tsconfigPath?: string, projectPath?: string) {
           }, []) as [ImportSpecifier, ClassDeclaration][];
       }
 
-      function generateInterface(declaration: ClassDeclaration) {
+      function generateOrGetExistingInterface(declaration: ClassDeclaration) {
         const interfaceName = `I${declaration.getName()}`;
-        const interfaceDeclaration = sourceFile.addInterface(
-          declaration.extractInterface(interfaceName)
+        let interfaceDeclaration = findImportedDeclaration(
+          interfaceName,
+          declaration.getSourceFile()
         );
+
+        if (!interfaceDeclaration) {
+          interfaceDeclaration = sourceFile.addInterface(
+            declaration.extractInterface(interfaceName)
+          );
+          interfaceDeclaration.setIsExported(true);
+        }
         sourceFile.fixMissingImports();
-        interfaceDeclaration.setIsExported(true);
 
         declaration.addImplements(interfaceName);
         declaration.getSourceFile().addImportDeclaration({
