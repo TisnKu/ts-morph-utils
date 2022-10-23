@@ -29,12 +29,19 @@ export const c = new ClassA();
 `
 );
 const fileA = project.getSourceFileOrThrow("a.ts");
-const fileC = project.getSourceFileOrThrow("c.ts");
 const classDeclaration: ClassDeclaration = fileA.getFirstDescendant(
   (node) => node.getKind() === SyntaxKind.ClassDeclaration
 ) as ClassDeclaration;
 classDeclaration.findReferencesAsNodes().forEach((ref) => {
-  console.log(ref.getText(), ref.getSourceFile().getFilePath());
+  console.log(
+    ref.getSourceFile().getFilePath(),
+    ref.getKindName(),
+    ref.getParentWhileKind(SyntaxKind.ImportDeclaration)?.getText(),
+    ref.getParent().getText(),
+    ref.getParent().getParent().getText(),
+    ref.getParent().getParent().getParent().getText(),
+    ref.getParent().getParent().getParent().getParent().getText()
+  );
 });
 
 project.saveSync();

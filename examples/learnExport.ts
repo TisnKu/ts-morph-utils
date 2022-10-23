@@ -25,7 +25,9 @@ fileA.getExportDeclarations().forEach((exportDeclaration) => {
     exportDeclaration.getModuleSpecifierValue(),
     exportDeclaration
       .getNamedExports()
-      .map((namedExport) => namedExport.getText())
+      .map(
+        (namedExport) => `${namedExport.getKindName()} ${namedExport.getText()}`
+      )
   );
 });
 

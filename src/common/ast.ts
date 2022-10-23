@@ -1,7 +1,10 @@
+import _ from "lodash";
 import {
   ExportedDeclarations,
+  ExportSpecifier,
   Expression,
   ImportSpecifier,
+  Node,
   Project,
   SourceFile,
   SyntaxKind,
@@ -48,38 +51,138 @@ export function getOrCreateFile(
     project.getSourceFile(filePath) || project.createSourceFile(filePath, "")
   );
 }
+
+export function addNamedImport(
+  sourceFile: SourceFile,
+  name: string,
+  moduleSpecifier: string,
+  alias?: string
+): ImportSpecifier {
+  const existingImport = sourceFile.getImportDeclaration(moduleSpecifier);
+
+  const importSpecifier = !!alias && alias !== name ? { name, alias } : name;
+  if (!existingImport) {
+    return sourceFile
+      .addImportDeclaration({
+        namedImports: [importSpecifier],
+        moduleSpecifier,
+      })
+      .getNamedImports()[0];
+  }
+
+  if (
+    existingImport
+      .getNamedImports()
+      .some((namedImport) => namedImport.getName() === name)
+  ) {
+    return;
+  }
+
+  return existingImport.addNamedImport(importSpecifier);
+}
+
+export function addNamedExport(
+  sourceFile: SourceFile,
+  name: string,
+  moduleSpecifier: string,
+  alias?: string
+): ExportSpecifier {
+  const existingExport = sourceFile.getExportDeclaration(moduleSpecifier);
+
+  const exportSpecifier = !!alias && alias !== name ? { name, alias } : name;
+  if (!existingExport) {
+    return sourceFile
+      .addExportDeclaration({
+        namedExports: [exportSpecifier],
+        moduleSpecifier,
+      })
+      .getNamedExports()[0];
+  }
+
+  if (
+    existingExport
+      .getNamedExports()
+      .some((namedExport) => namedExport.getName() === name)
+  ) {
+    return;
+  }
+
+  return existingExport.addNamedExport(exportSpecifier);
+}
+
+export function deleteNamedImport(namedImport: ImportSpecifier) {
+  if (namedImport.getImportDeclaration().getNamedImports().length === 1) {
+    namedImport.getImportDeclaration().remove();
+  } else {
+    namedImport.remove();
+  }
+}
+
+export function deleteNamedExport(namedExport: ExportSpecifier) {
+  if (namedExport.getExportDeclaration().getNamedExports().length === 1) {
+    namedExport.getExportDeclaration().remove();
+  } else {
+    namedExport.remove();
+  }
+}
+
 export function moveDeclaration(
   declaration: Exclude<ExportedDeclarations, Expression | SourceFile>,
   to: SourceFile
 ): void {
+  console.log("moveDeclaration", declaration.getText(), "to", to.getFilePath());
+  const aliasMap = new Map<string, string>();
   const name = declaration.getName();
   const from = declaration.getSourceFile();
-  const refs = declaration.findReferencesAsNodes();
-  to.addStatements(declaration.getText());
+  const refs: Array<
+    [Node, ImportSpecifier | undefined, ExportSpecifier | undefined]
+  > = _.uniqBy(declaration.findReferencesAsNodes(), (a: any, b: any) => a === b)
+    .map((ref) => [
+      ref,
+      ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier),
+      ref.getFirstAncestorByKind(SyntaxKind.ExportSpecifier),
+    ])
+    .filter((ref) => ref[1] || ref[2]) as any;
 
-  declaration.remove();
-  refs.forEach((ref) => {
+  refs.forEach(([ref, namedImport, namedExport]) => {
     const sourceFile = ref.getSourceFile();
-    const namedImport = ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier);
     if (namedImport) {
-      if (namedImport.getImportDeclaration().getNamedImports().length === 1) {
-        namedImport.getImportDeclaration().remove();
-      } else {
-        namedImport.remove();
-      }
+      aliasMap.set(
+        sourceFile.getFilePath(),
+        namedImport.getAliasNode()?.getText()
+      );
+      deleteNamedImport(namedImport);
     }
+
     if (from == sourceFile || (namedImport && sourceFile !== to)) {
-      sourceFile.addImportDeclaration({
-        namedImports: [name],
-        moduleSpecifier: getRelativePath(
-          sourceFile.getFilePath(),
-          to.getFilePath()
-        ),
-      });
+      addNamedImport(
+        sourceFile,
+        name,
+        getRelativePath(sourceFile.getFilePath(), to.getFilePath()),
+        aliasMap.get(sourceFile.getFilePath())
+      );
+    }
+
+    if (namedExport) {
+      aliasMap.set(
+        sourceFile.getFilePath(),
+        namedExport.getAliasNode()?.getText()
+      );
+      deleteNamedExport(namedExport);
+
+      addNamedExport(
+        sourceFile,
+        name,
+        getRelativePath(sourceFile.getFilePath(), to.getFilePath()),
+        aliasMap.get(sourceFile.getFilePath())
+      );
     }
   });
+
+  to.addStatements(declaration.getText());
+  declaration.remove();
   to.fixMissingImports();
-  if (declaration.getSourceFile().getStatements().length === 0) {
-    declaration.getSourceFile().delete();
+  if (from.getStatements().length === 0) {
+    from.delete();
   }
 }

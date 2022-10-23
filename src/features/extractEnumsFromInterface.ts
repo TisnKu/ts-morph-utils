@@ -1,6 +1,5 @@
 import { Project } from "ts-morph";
-import { getOrCreateFile } from "../common/ast";
-import fixInvalidImports from "./fixInvalidImports";
+import { getOrCreateFile, moveDeclaration } from "../common/ast";
 
 export default function (project: Project) {
   project
@@ -9,31 +8,15 @@ export default function (project: Project) {
     .forEach((sourceFile) => {
       // find all enums in the interface file
       const enumDeclarations = sourceFile.getEnums();
-
-      // and create an enum file for all of them
-      const enumFilePath = sourceFile
-        .getFilePath()
-        .replace(".interface", ".enum");
-      const enumFile = getOrCreateFile(project, enumFilePath);
-      enumFile.addEnums(
-        enumDeclarations.map((enumDeclaration) =>
-          enumDeclaration.getStructure()
-        )
-      );
-
-      // remove the enums from the interface file
-      enumDeclarations.forEach((enumDeclaration) => enumDeclaration.remove());
-      //sourceFile.addImportDeclaration({
-      //  moduleSpecifier: getRelativePath(
-      //    sourceFile.getFilePath(),
-      //    enumFile.getFilePath()
-      //  ),
-      //  namedImports: enumDeclarations.map((enumDeclaration) =>
-      //    enumDeclaration.getName()
-      //  ),
-      //});
+      enumDeclarations.forEach((enumDeclaration) => {
+        moveDeclaration(
+          enumDeclaration,
+          getOrCreateFile(
+            project,
+            sourceFile.getFilePath().replace(".interface.ts", ".enum.ts")
+          )
+        );
+      });
     });
   project.saveSync();
-
-  fixInvalidImports(project);
 }
