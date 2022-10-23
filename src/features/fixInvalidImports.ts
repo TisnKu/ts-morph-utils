@@ -1,12 +1,7 @@
 import _ from "lodash";
-import { ImportDeclaration, SourceFile } from "ts-morph";
-import { createProject } from "../common/project";
+import { ImportDeclaration, Project, SourceFile } from "ts-morph";
 
-export default function (tsconfigPath?: string, projectPath?: string) {
-  const project = createProject({
-    tsConfigFilePath: tsconfigPath,
-    projectPath,
-  });
+export default function (project: Project) {
   const queue = [];
   project.getSourceFiles().forEach((sourceFile) => {
     return sourceFile
@@ -42,21 +37,13 @@ export default function (tsconfigPath?: string, projectPath?: string) {
   console.log(optimizedFiles.join("\n"));
 
   (function fixMissingImports() {
-    const project = createProject({
-      tsConfigFilePath: tsconfigPath,
-      projectPath,
-    });
     optimizedFiles.forEach((filePath) => {
       project.getSourceFile(filePath)?.fixMissingImports();
+      project.saveSync();
     });
-    project.saveSync();
   })();
 
   (function cleanup() {
-    const project = createProject({
-      tsConfigFilePath: tsconfigPath,
-      projectPath,
-    });
     optimizedFiles.forEach((filePath) => {
       const sourceFile = project.getSourceFile(filePath);
       sourceFile?.getImportDeclarations().forEach((declaration) => {

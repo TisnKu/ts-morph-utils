@@ -4,18 +4,13 @@ import {
   ImportSpecifier,
   InterfaceDeclaration,
   Node,
+  Project,
   SyntaxKind,
 } from "ts-morph";
 import { findDeclaration, findImportedDeclaration } from "../common/ast";
 import { getRelativePath } from "../common/file";
-import { createProject } from "../common/project";
 
-export default function (tsconfigPath?: string, projectPath?: string) {
-  const project = createProject({
-    tsConfigFilePath: tsconfigPath,
-    projectPath,
-  });
-
+export default function (project: Project) {
   const newInterfaceDeclarations = new Map();
   project
     .getSourceFiles()

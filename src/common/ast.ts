@@ -2,6 +2,7 @@ import {
   ExportedDeclarations,
   Expression,
   ImportSpecifier,
+  Project,
   SourceFile,
   SyntaxKind,
 } from "ts-morph";
@@ -39,6 +40,14 @@ export function getOrCreateInterfaceFile(sourceFile: SourceFile): SourceFile {
   );
 }
 
+export function getOrCreateFile(
+  project: Project,
+  filePath: string
+): SourceFile {
+  return (
+    project.getSourceFile(filePath) || project.createSourceFile(filePath, "")
+  );
+}
 export function moveDeclaration(
   declaration: Exclude<ExportedDeclarations, Expression | SourceFile>,
   to: SourceFile

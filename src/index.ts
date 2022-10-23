@@ -2,6 +2,7 @@ import fs from "fs";
 import _ from "lodash";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { createProject } from "./common/project";
 
 interface Args {
   feature?: string;
@@ -38,7 +39,12 @@ if (matchedFile) {
       _.pick(argv, ["project", "tsconfig"]),
       "\n"
     );
-    feature.default(argv.tsconfig, argv.project);
+    feature.default(
+      createProject({
+        tsConfigFilePath: argv.tsconfig,
+        projectPath: argv.project,
+      })
+    );
   }
 } else {
   console.log(
