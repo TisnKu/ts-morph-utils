@@ -136,13 +136,20 @@ export function moveDeclaration(
   const from = declaration.getSourceFile();
   const refs: Array<
     [Node, ImportSpecifier | undefined, ExportSpecifier | undefined]
-  > = _.uniqBy(declaration.findReferencesAsNodes(), (a: any, b: any) => a === b)
-    .map((ref) => [
-      ref,
-      ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier),
-      ref.getFirstAncestorByKind(SyntaxKind.ExportSpecifier),
-    ])
-    .filter((ref) => ref[1] || ref[2]) as any;
+  > = _.uniqBy(
+    declaration
+      .findReferencesAsNodes()
+      .map((ref) => [
+        ref,
+        ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier),
+        ref.getFirstAncestorByKind(SyntaxKind.ExportSpecifier),
+        `${ref
+          .getSourceFile()
+          .getFilePath()}:${ref.getStartLineNumber()}:${ref.getStartLinePos()}`,
+      ])
+      .filter((ref) => ref[1] || ref[2]),
+    (ref) => ref[3]
+  ) as any;
 
   refs.forEach(([ref, namedImport, namedExport]) => {
     const sourceFile = ref.getSourceFile();

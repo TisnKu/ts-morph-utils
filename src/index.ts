@@ -25,6 +25,7 @@ const listAllFilesUnderFeatures = () => {
     .map((fileName: string) => fileName.replace(".ts", ""));
 };
 const featureName = argv.feature;
+console.log(argv);
 const filesNames = listAllFilesUnderFeatures();
 const matchedFile = filesNames.find((fileName: string) =>
   fileName.toLowerCase().includes(_.toLower(featureName))
