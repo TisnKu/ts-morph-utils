@@ -6,11 +6,30 @@ export default function (project: Project) {
     .getSourceFiles()
     .filter((sourceFile) => sourceFile.getFilePath().endsWith(".interface.ts"))
     .forEach((sourceFile) => {
+      const enumDeclarations = sourceFile.getEnums();
+      const classDeclarations = sourceFile.getClasses();
+      [...enumDeclarations, ...classDeclarations].forEach(
+        (enumOrClassDeclaration) => {
+          moveDeclaration(
+            enumOrClassDeclaration,
+            getOrCreateFile(
+              project,
+              sourceFile.getFilePath().replace(".interface.ts", ".enum.ts")
+            )
+          );
+        }
+      );
+    });
+
+  project
+    .getSourceFiles()
+    .filter((sourceFile) => !sourceFile.getFilePath().includes("enum"))
+    .forEach((sourceFile) => {
       // find all enums in the interface file
       const enumDeclarations = sourceFile.getEnums();
-      enumDeclarations.forEach((enumDeclaration) => {
+      [...enumDeclarations].forEach((enumOrClassDeclaration) => {
         moveDeclaration(
-          enumDeclaration,
+          enumOrClassDeclaration,
           getOrCreateFile(
             project,
             sourceFile.getFilePath().replace(".interface.ts", ".enum.ts")
@@ -18,5 +37,6 @@ export default function (project: Project) {
         );
       });
     });
+
   project.saveSync();
 }

@@ -12,13 +12,22 @@ import {
 import { getRelativePath } from "./file";
 
 export function findDeclaration(
-  namedImport: ImportSpecifier
-): ExportedDeclarations {
-  return namedImport
-    ?.getImportDeclaration()
+  namedImportOrExport: ImportSpecifier | ExportSpecifier
+): ExportedDeclarations | undefined {
+  if (namedImportOrExport.getKind() === SyntaxKind.ImportSpecifier) {
+    const namedImport: ImportSpecifier = namedImportOrExport as ImportSpecifier;
+    return namedImport
+      ?.getImportDeclaration()
+      .getModuleSpecifierSourceFile()
+      ?.getExportedDeclarations()
+      .get(namedImport.getName())?.[0];
+  }
+  const namedExport = namedImportOrExport as ExportSpecifier;
+  return namedExport
+    ?.getExportDeclaration()
     .getModuleSpecifierSourceFile()
     ?.getExportedDeclarations()
-    .get(namedImport.getName())?.[0];
+    .get(namedExport.getName())?.[0];
 }
 
 export function findImportedDeclaration(

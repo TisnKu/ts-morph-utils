@@ -15,6 +15,9 @@ const argv = yargs(hideBin(process.argv))
   .alias("p", "project")
   .alias("c", "tsconfig").argv as Args;
 
+require("dotenv").config();
+console.log(process.env);
+
 function requireFeature(fileName: string) {
   return require("./features/" + fileName);
 }
@@ -25,7 +28,6 @@ const listAllFilesUnderFeatures = () => {
     .map((fileName: string) => fileName.replace(".ts", ""));
 };
 const featureName = argv.feature;
-console.log(argv);
 const filesNames = listAllFilesUnderFeatures();
 const matchedFile = filesNames.find((fileName: string) =>
   fileName.toLowerCase().includes(_.toLower(featureName))
