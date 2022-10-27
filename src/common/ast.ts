@@ -195,7 +195,13 @@ export function moveDeclaration(
     }
   });
 
-  to.addStatements(declaration.getText());
+  if (declaration.getKind() === SyntaxKind.VariableDeclaration) {
+    to.addStatements(
+      declaration.getFirstAncestorByKind(SyntaxKind.VariableStatement).getText()
+    );
+  } else {
+    to.addStatements(declaration.getText());
+  }
   declaration.remove();
   to.fixMissingImports();
   if (from.getStatements().length === 0) {
