@@ -11,28 +11,32 @@ export default function (project: Project) {
   const teamsCallInterface = project.getSourceFileOrThrow(
     process.env.TEAMS_CALL_PATH
   );
+  const insertedSourceFiles = new Set<SourceFile>();
   teamsCallInterface.getExportedDeclarations().forEach((declarations) => {
     const declaration = declarations[0] as Exclude<
       ExportedDeclarations,
       SourceFile | Expression
     >;
     declaration.findReferencesAsNodes().forEach((ref) => {
-      const namedImport = ref.getFirstAncestorByKind(
-        SyntaxKind.ImportSpecifier
-      );
-      if (namedImport) {
-        const sourceFile = namedImport.getSourceFile();
+      const imp = ref.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
+      if (imp) {
+        const sourceFile = imp.getSourceFile();
         const importDeclarations = sourceFile.getChildrenOfKind(
           SyntaxKind.ImportDeclaration
         );
         const exportDeclarations = sourceFile.getChildrenOfKind(
           SyntaxKind.ExportDeclaration
         );
-        sourceFile.insertStatements(
-          importDeclarations.length + exportDeclarations.length,
-          "import TeamsCall = teams.calling.TeamsCall;"
+        if (!insertedSourceFiles.has(sourceFile)) {
+          sourceFile.insertStatements(
+            importDeclarations.length + exportDeclarations.length,
+            "import TeamsCall = teams.calling.TeamsCall;"
+          );
+          insertedSourceFiles.add(sourceFile);
+        }
+        deleteNamedImport(
+          ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier)
         );
-        deleteNamedImport(namedImport);
       }
     });
   });
