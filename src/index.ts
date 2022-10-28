@@ -16,7 +16,6 @@ const argv = yargs(hideBin(process.argv))
   .alias("c", "tsconfig").argv as Args;
 
 require("dotenv").config();
-console.log(process.env);
 
 function requireFeature(fileName: string) {
   return require("./features/" + fileName);
