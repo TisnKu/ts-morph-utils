@@ -11,7 +11,6 @@ export default function (project: Project) {
   const teamsCallInterface = project.getSourceFileOrThrow(
     process.env.TEAMS_CALL_PATH
   );
-  const insertedSourceFiles = new Set<SourceFile>();
   teamsCallInterface.getExportedDeclarations().forEach((declarations) => {
     const declaration = declarations[0] as Exclude<
       ExportedDeclarations,
@@ -27,13 +26,12 @@ export default function (project: Project) {
         const exportDeclarations = sourceFile.getChildrenOfKind(
           SyntaxKind.ExportDeclaration
         );
-        if (!insertedSourceFiles.has(sourceFile)) {
-          sourceFile.insertStatements(
-            importDeclarations.length + exportDeclarations.length,
-            "import TeamsCall = teams.calling.TeamsCall;"
-          );
-          insertedSourceFiles.add(sourceFile);
-        }
+        sourceFile.insertStatements(
+          importDeclarations.length + exportDeclarations.length,
+          ref.getText() === "TeamsCallId"
+            ? "import TeamsCallId = teams.calling.TeamsCallId;"
+            : "import TeamsCall = teams.calling.TeamsCall;"
+        );
         deleteNamedImport(
           ref.getFirstAncestorByKind(SyntaxKind.ImportSpecifier)
         );
