@@ -8,6 +8,7 @@ interface Args {
   feature?: string;
   tsconfig?: string;
   project?: string;
+  file?: string;
 }
 
 const argv = yargs(hideBin(process.argv))
@@ -45,6 +46,7 @@ if (matchedFile) {
       createProject({
         tsConfigFilePath: argv.tsconfig,
         projectPath: argv.project,
+        filePath: argv.file,
       })
     );
   }

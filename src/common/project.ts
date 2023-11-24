@@ -1,7 +1,11 @@
 import fs from "fs";
 import { Project } from "ts-morph";
 
-export function createProject({ tsConfigFilePath, projectPath }): Project {
+export function createProject({
+  tsConfigFilePath,
+  projectPath,
+  filePath,
+}): Project {
   if (tsConfigFilePath) {
     return new Project({
       tsConfigFilePath,
@@ -9,6 +13,11 @@ export function createProject({ tsConfigFilePath, projectPath }): Project {
   }
 
   const project = new Project();
+  if (filePath) {
+    project.addSourceFileAtPath(filePath);
+    return project;
+  }
+
   const subdirectories = fs.readdirSync(projectPath);
   for (const subdirectory of subdirectories) {
     if (subdirectory === "node_modules") {
