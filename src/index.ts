@@ -2,6 +2,7 @@ import fs from "fs";
 import _ from "lodash";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { setLogLevel } from "./common/logger";
 import { createProject } from "./common/project";
 
 interface Args {
@@ -9,6 +10,7 @@ interface Args {
   tsconfig?: string;
   project?: string;
   file?: string;
+  logLevel?: string;
 }
 
 const argv = yargs(hideBin(process.argv))
@@ -17,6 +19,7 @@ const argv = yargs(hideBin(process.argv))
   .alias("c", "tsconfig").argv as Args;
 
 require("dotenv").config();
+setLogLevel(argv.logLevel);
 
 function requireFeature(fileName: string) {
   return require("./features/" + fileName);
@@ -30,7 +33,7 @@ const listAllFilesUnderFeatures = () => {
 const featureName = argv.feature;
 const filesNames = listAllFilesUnderFeatures();
 const matchedFile = filesNames.find((fileName: string) =>
-  fileName.toLowerCase().includes(_.toLower(featureName))
+  fileName.toLowerCase().includes(_.toLower(featureName)),
 );
 
 if (matchedFile) {
@@ -39,22 +42,22 @@ if (matchedFile) {
     console.log("Matched feature: ", matchedFile, "\n");
     console.log(
       "Running feature with arguments: ",
-      _.pick(argv, ["project", "tsconfig"]),
-      "\n"
+      _.pick(argv, ["project", "tsconfig", "file"]),
+      "\n",
     );
     feature.default(
       createProject({
         tsConfigFilePath: argv.tsconfig,
         projectPath: argv.project,
         filePath: argv.file,
-      })
+      }),
     );
   }
 } else {
   console.log(
-    matchedFile.length === 0
+    _.isEmpty(featureName)
       ? "No Command Matched "
       : "More than 1 command matched: ",
-    matchedFile
+    matchedFile,
   );
 }
